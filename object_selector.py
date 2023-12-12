@@ -4,6 +4,7 @@ import numpy as np
 import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk
+from sam import mask_generator
 
 class Image_Displayer:
     def __init__(self, root):
@@ -94,3 +95,29 @@ class Image_Displayer:
         if self.current_image_index < len(self.file_paths):
             self.fit_image_to_frame()
             self.display_image()
+
+class Mask_Displayer(Image_Displayer):
+
+    def __init__(self, root):
+
+        super().__init__(root)
+        self.mask = None
+        self.mask_button = tk.Button(root, text="Mask Generator", command=self.mask_generator)
+
+
+    def show_additional_buttons(self):
+
+        self.mask_button.pack(side=tk.LEFT, padx=5, pady=10)
+        super().show_additional_buttons()
+
+    def mask_generator(self):
+
+        image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+        self.mask = mask_generator.generate(image)
+        
+    def display_mask(self):
+        pass
+
+
+
+
