@@ -26,39 +26,45 @@ class Image_Displayer:
         self.prev_button = tk.Button(self.root, text="Previous", command=self.show_prev_image)
         self.prev_button.pack_forget()
 
-
     def load_image(self):
         self.file_paths = filedialog.askopenfilenames(title="Select Images",
                                                       filetypes=[("Image files", "*.png *.jpg *.jpeg")])
 
         if self.file_paths:
             self.current_image_index = 0
+
+            image = cv2.imread(self.file_paths[self.current_image_index])
+            self.image = self.resize_image(image)
+
             self.show_additional_buttons()
-            self.fit_image_to_frame()
+
             self.display_image()
 
-    def fit_image_to_frame(self):
+    def resize_image(self, image):
 
-        image = cv2.imread(self.file_paths[self.current_image_index])
+        height, width, _ = image.shape
+        self.ratio = width / height
 
-        # fit the image to the canvas
-        image_height, image_width, _ = image.shape
-        width, height = self.canvas.winfo_width(), self.canvas.winfo_height()
+        # define new image height
+        self.HEIGHT = 600
+        self.WIDTH = int(self.HEIGHT * self.ratio)
 
-        scale = width / image_width
-        self.image = cv2.resize(image, (int(image_width * scale), int(image_height * scale)))
+        return cv2.resize(image, (self.WIDTH, self.HEIGHT))
 
-    def display_image(self):
+    def display_image(self, image=None):
         if self.image is not None:
+            if image is None:
+                image = self.image
+
             # Convert image from BGR to RGB for Tkinter
-            image_rgb = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
             # Convert to PhotoImage format
             image_tk = Image.fromarray(image_rgb)
             image_tk = ImageTk.PhotoImage(image_tk)
 
             # Update canvas
-            self.canvas.config()
+            self.canvas.config(width=self.WIDTH, height=self.HEIGHT)
             self.canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
             self.canvas.image = image_tk
 
@@ -102,7 +108,7 @@ class Mask_Displayer(Image_Displayer):
 
         super().__init__(root)
         self.anns = None
-        self.mask = []
+        self.masks = []
         self.contours = []
         # init button
         self.mask_button = tk.Button(root, text="Mask Generator", command=self.mask_generator)
@@ -123,6 +129,7 @@ class Mask_Displayer(Image_Displayer):
 
         for ann in self.anns:
             m = ann['segmentation']
+            print(m.shape)
             mask = np.uint8(m) * 255
 
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -130,9 +137,11 @@ class Mask_Displayer(Image_Displayer):
 
             self.contours.append(contours)
             self.masks.append(m)
-            
+
+
         print('success')
-        self.display_image()
+        self.mask_button.config(state='disabled')
+        self.masking()
 
 
     def object_selector(self, event):
@@ -140,31 +149,38 @@ class Mask_Displayer(Image_Displayer):
         if self.anns is not None:
             x, y = event.x, event.y
 
+            print(x, y)
+
+            x = int(x * self.ratio)
+            y = int(y * self.ratio)
+
+            print(x, y)
+
             for ann, contour in zip(self.anns, self.contours):
                 if ann['segmentation'][x, y]:
-                    cv2.drawContours(self.image, contour, -1, (0, 255, 255), thickness=2)
+                    cv2.drawContours(self.masked_image, contour, -1, (0, 0, 0), thickness=3)
 
-        self.display_image()
+        self.display_image(self.masked_image)
 
-    def display_mask(self):
+    def masking(self):
 
-        if self.mask is not None:
-            color = np.random.random_integers(0, 255, 3)
+        if self.masks is not None:
+            self.masked_image = np.copy(self.image)
+            color_mask = np.zeros_like(self.image)
 
-            mask = np.zeros_like(self.image)
-            # Convert image from BGR to RGB for Tkinter
-            image_rgb = cv2.cvtColor(self.mask, cv2.COLOR_BGR2RGB)
+            for mask in self.masks:
+                color = np.random.random_integers(0, 255, 3)
+                color_mask[mask] = color
 
-            # Convert to PhotoImage format
-            image_tk = Image.fromarray(image_rgb)
-            image_tk = ImageTk.PhotoImage(image_tk)
+                # define opacity value
+                opacity = 0.5
 
-            # Update canvas
-            self.canvas.config()
-            self.canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
-            self.canvas.image = image_tk
+                # Add the colored polygon to the original image with opacity
+                cv2.addWeighted(color_mask, opacity, self.masked_image, 1 - opacity, 0, self.masked_image)
 
-            self.mask_button.config(state='disabled')
+        self.display_image(self.masked_image)
+
+
 
 
 
