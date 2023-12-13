@@ -26,6 +26,7 @@ class Image_Displayer:
         self.prev_button = tk.Button(self.root, text="Previous", command=self.show_prev_image)
         self.prev_button.pack_forget()
 
+
     def load_image(self):
         self.file_paths = filedialog.askopenfilenames(title="Select Images",
                                                       filetypes=[("Image files", "*.png *.jpg *.jpeg")])
@@ -101,8 +102,12 @@ class Mask_Displayer(Image_Displayer):
 
         super().__init__(root)
         self.anns = None
-        self.mask_button = tk.Button(root, text="Mask Generator", command=self.mask_generator)
         self.mask = None
+        self.contours = []
+        # init button
+        self.mask_button = tk.Button(root, text="Mask Generator", command=self.mask_generator)
+
+        self.canvas.bind("<Button-1>", self.object_selector)
 
     def show_additional_buttons(self):
         self.mask_button.config(state='normal')
@@ -123,9 +128,21 @@ class Mask_Displayer(Image_Displayer):
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             cv2.drawContours(self.image, contours, -1, (0, 0, 255), thickness=1)
 
+            self.contours.append(contours)
         print('success')
         self.display_image()
 
+
+    def object_selector(self, event):
+
+        if self.anns is not None:
+            x, y = event.x, event.y
+
+            for ann, contour in zip(self.anns, self.contours):
+                if ann['segmentation'][x, y]:
+                    cv2.drawContours(self.image, contour, -1, (0, 255, 255), thickness=2)
+
+        self.display_image()
 
     def display_mask(self):
 
