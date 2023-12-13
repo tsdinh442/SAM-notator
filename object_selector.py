@@ -83,7 +83,6 @@ class Image_Displayer:
         self.current_image_index += 1
         self.check_image_index()
 
-        # self.polygons_image = np.copy(self.image)
         if self.current_image_index < len(self.file_paths):
             self.fit_image_to_frame()
             self.display_image()
@@ -101,22 +100,50 @@ class Mask_Displayer(Image_Displayer):
     def __init__(self, root):
 
         super().__init__(root)
-        self.mask = None
+        self.anns = None
         self.mask_button = tk.Button(root, text="Mask Generator", command=self.mask_generator)
-
+        self.mask = None
 
     def show_additional_buttons(self):
-
+        self.mask_button.config(state='normal')
         self.mask_button.pack(side=tk.LEFT, padx=5, pady=10)
         super().show_additional_buttons()
+
 
     def mask_generator(self):
 
         image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
-        self.mask = mask_generator.generate(image)
+        self.anns = mask_generator.generate(image)
+        #self.mask = np.copy(self.image)
+
+        for ann in self.anns:
+            m = ann['segmentation']
+            mask = np.uint8(m) * 255
+
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cv2.drawContours(self.image, contours, -1, (0, 0, 255), thickness=1)
+
+        print('success')
+        self.display_image()
+
         
     def display_mask(self):
-        pass
+
+        if self.mask is not None:
+
+            # Convert image from BGR to RGB for Tkinter
+            image_rgb = cv2.cvtColor(self.mask, cv2.COLOR_BGR2RGB)
+
+            # Convert to PhotoImage format
+            image_tk = Image.fromarray(image_rgb)
+            image_tk = ImageTk.PhotoImage(image_tk)
+
+            # Update canvas
+            self.canvas.config()
+            self.canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+            self.canvas.image = image_tk
+
+            self.mask_button.config(state='disabled')
 
 
 
