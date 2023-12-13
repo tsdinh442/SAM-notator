@@ -126,7 +126,7 @@ class Mask_Displayer(Image_Displayer):
         print('success')
         self.display_image()
 
-        
+
     def display_mask(self):
 
         if self.mask is not None:
