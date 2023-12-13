@@ -5,4 +5,4 @@ work in progress
 
 ### Demo
 
-![demo](src/images/demo.png)
+![demo](images/demo.png)

@@ -102,7 +102,7 @@ class Mask_Displayer(Image_Displayer):
 
         super().__init__(root)
         self.anns = None
-        self.mask = None
+        self.mask = []
         self.contours = []
         # init button
         self.mask_button = tk.Button(root, text="Mask Generator", command=self.mask_generator)
@@ -129,6 +129,8 @@ class Mask_Displayer(Image_Displayer):
             cv2.drawContours(self.image, contours, -1, (0, 0, 255), thickness=1)
 
             self.contours.append(contours)
+            self.masks.append(m)
+            
         print('success')
         self.display_image()
 
@@ -147,7 +149,9 @@ class Mask_Displayer(Image_Displayer):
     def display_mask(self):
 
         if self.mask is not None:
+            color = np.random.random_integers(0, 255, 3)
 
+            mask = np.zeros_like(self.image)
             # Convert image from BGR to RGB for Tkinter
             image_rgb = cv2.cvtColor(self.mask, cv2.COLOR_BGR2RGB)
 
