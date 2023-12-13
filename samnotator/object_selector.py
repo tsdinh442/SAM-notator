@@ -114,6 +114,7 @@ class Mask_Displayer(Image_Displayer):
         self.mask_button = tk.Button(root, text="Mask Generator", command=self.mask_generator)
 
         self.canvas.bind("<Button-1>", self.object_selector)
+        self.canvas.bind("<Button-3>", self.object_deselector)
 
     def show_additional_buttons(self):
         self.mask_button.config(state='normal')
@@ -128,15 +129,9 @@ class Mask_Displayer(Image_Displayer):
         #self.mask = np.copy(self.image)
 
         for ann in self.anns:
-            m = ann['segmentation']
-            print(m.shape)
-            mask = np.uint8(m) * 255
+            mask = ann['segmentation']
 
-            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            cv2.drawContours(self.image, contours, -1, (0, 0, 255), thickness=1)
-
-            self.contours.append(contours)
-            self.masks.append(m)
+            self.masks.append(mask)
 
 
         print('success')
@@ -149,18 +144,46 @@ class Mask_Displayer(Image_Displayer):
         if self.anns is not None:
             x, y = event.x, event.y
 
-            print(x, y)
+            x = int(x * self.ratio)
+            y = int(y * self.ratio)
+
+            masked_image = np.copy(self.masked_image)
+            for ann in self.anns:
+                if ann['segmentation'][x, y]:
+                    mask = np.uint8(ann['segmentation']) * 255
+                    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    if contours not in self.contours.any():
+                        self.contours.append(contours)
+                        break
+
+        self.draw_contours(masked_image)
+
+    def object_deselector(self, event):
+
+        if len(self.contours) > 0:
+
+            print(len(self.contours))
+            x, y = event.x, event.y
 
             x = int(x * self.ratio)
             y = int(y * self.ratio)
 
-            print(x, y)
+            masked_image = np.copy(self.masked_image)
+            for contours in self.contours:
+                check = cv2.pointPolygonTest(contours, (x, y), measureDist=False)
+                if check > 0 and contours in self.contours:
+                    self.contours.remove(contours)
+                    break
 
-            for ann, contour in zip(self.anns, self.contours):
-                if ann['segmentation'][x, y]:
-                    cv2.drawContours(self.masked_image, contour, -1, (0, 0, 0), thickness=3)
+        self.draw_contours(masked_image)
 
-        self.display_image(self.masked_image)
+
+    def draw_contours(self, masked):
+
+        if len(self.contours) > 0:
+            cv2.drawContours(masked, *self.contours, -1, (0, 0, 0), thickness=3)
+            self.display_image(masked)
+
 
     def masking(self):
 
@@ -172,11 +195,11 @@ class Mask_Displayer(Image_Displayer):
                 color = np.random.random_integers(0, 255, 3)
                 color_mask[mask] = color
 
-                # define opacity value
-                opacity = 0.5
+            # define opacity value
+            opacity = 0.5
 
-                # Add the colored polygon to the original image with opacity
-                cv2.addWeighted(color_mask, opacity, self.masked_image, 1 - opacity, 0, self.masked_image)
+            # Add the colored polygon to the original image with opacity
+            cv2.addWeighted(color_mask, opacity, self.masked_image, 1 - opacity, 0, self.masked_image)
 
         self.display_image(self.masked_image)
 
