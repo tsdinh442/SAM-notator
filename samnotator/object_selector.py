@@ -134,7 +134,7 @@ class Mask_Displayer(Image_Displayer):
             self.masks.append(mask)
 
 
-        print('success')
+        print(len(self.anns))
         self.mask_button.config(state='disabled')
         self.masking()
 
@@ -151,15 +151,15 @@ class Mask_Displayer(Image_Displayer):
             for ann in self.anns:
                 if ann['segmentation'][x, y]:
                     mask = np.uint8(ann['segmentation']) * 255
-                    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                    if contours not in self.contours.any():
-                        self.contours.append(contours)
+
+                    if not any(np.array_equal(mask, arr) for arr in self.contours):
+                        self.contours.append(mask)
                         break
 
-        self.draw_contours(masked_image)
+            self.draw_contours(masked_image)
 
     def object_deselector(self, event):
-
+        print('right clicked')
         if len(self.contours) > 0:
 
             print(len(self.contours))
@@ -169,19 +169,23 @@ class Mask_Displayer(Image_Displayer):
             y = int(y * self.ratio)
 
             masked_image = np.copy(self.masked_image)
-            for contours in self.contours:
-                check = cv2.pointPolygonTest(contours, (x, y), measureDist=False)
-                if check > 0 and contours in self.contours:
-                    self.contours.remove(contours)
-                    break
+            for ann in self.anns:
+                if ann['segmentation'][x, y]:
+                    mask = np.uint8(ann['segmentation']) * 255
 
-        self.draw_contours(masked_image)
+                    if any(np.array_equal(mask, arr) for arr in self.contours):
+                        self.contours.remove(mask)
+                        break
+
+            self.draw_contours(masked_image)
 
 
     def draw_contours(self, masked):
 
         if len(self.contours) > 0:
-            cv2.drawContours(masked, *self.contours, -1, (0, 0, 0), thickness=3)
+            for mask in self.contours:
+                contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                cv2.drawContours(masked, contours, -1, (0, 0, 0), thickness=3)
             self.display_image(masked)
 
 
