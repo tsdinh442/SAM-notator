@@ -142,21 +142,12 @@ class Mask_Displayer(Image_Displayer):
         masked_image = np.copy(self.masked_image)
         if self.anns is not None:
             x, y = event.x, event.y
-            print(x, y)
-            #x = int(x * self.ratio)
-            #y = int(y * self.ratio)
 
-            #x = int(self.canvas.canvasx(event.x) * self.ratio)
-            #y = int(self.canvas.canvasy(event.y) * self.ratio)
-            #print(x, y)
-
-
-            for mask in self.masks:
-                if 0 <= y < mask.shape[0] and 0 <= x < mask.shape[1]:
+            if 0 <= y < self.masks[0].shape[0] and 0 <= x < self.masks[0].shape[1]:
+                for mask in self.masks:
                     if mask[y, x]:
                         if not any(np.array_equal(mask, arr) for arr in self.contours):
                             self.contours.append(mask)
-                            print(True)
                             break
         self.draw_contours(masked_image)
 
@@ -165,30 +156,24 @@ class Mask_Displayer(Image_Displayer):
         if len(self.contours) > 0:
             x, y = event.x, event.y
 
-            #x = int(x * self.ratio)
-            #y = int(y * self.ratio)
-
             new_contours = []
 
-
-            contours_copy = self.contours.copy()
             if 0 <= y < self.masks[0].shape[0] and 0 <= x < self.masks[0].shape[1]:
-                for mask in self.masks:
-                    if 0 <= y < mask.shape[0] and 0 <= x < mask.shape[1]:
-                        if mask[y, x]:
-                            # Iterate over the list and delete matching arrays
-                             # Create a copy to avoid modifying the list during iteration
-                            for arr in contours_copy:
-                                if isinstance(arr, np.ndarray):
-                                    if np.array_equal(arr, mask):
-                                        print(True)
-                                        #new_contours.append(arr)
-                                        self.contours.remove(arr)
-                                elif any(isinstance(subarr, np.ndarray) and np.array_equal(subarr, mask) for subarr in arr):
-                                    print(True)
-                                    self.contours.remove(arr)
+                #for mask in self.masks:
+                    #if mask[y, x]:
+                        # Iterate over the list and delete matching arrays
+                         # Create a copy to avoid modifying the list during iteration
+                contours_copy = self.contours
+                for mask in contours_copy:
+                    if mask[y, x]:
+                        for idx, arr in enumerate(contours_copy):
+                            if np.array_equal(mask, arr):
+                                self.contours.pop(idx)
                                 break
-        #self.contours = new_contours
+                        break
+                    #break
+                #self.contours = new_contours
+
         self.draw_contours(masked_image)
 
     def draw_contours(self, masked):
