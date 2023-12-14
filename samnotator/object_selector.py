@@ -139,6 +139,7 @@ class Mask_Displayer(Image_Displayer):
 
     def object_selector(self, event):
 
+        masked_image = np.copy(self.masked_image)
         if self.anns is not None:
             x, y = event.x, event.y
             print(x, y)
@@ -149,54 +150,59 @@ class Mask_Displayer(Image_Displayer):
             #y = int(self.canvas.canvasy(event.y) * self.ratio)
             #print(x, y)
 
-            masked_image = np.copy(self.masked_image)
+
             for mask in self.masks:
                 if 0 <= y < mask.shape[0] and 0 <= x < mask.shape[1]:
                     if mask[y, x]:
                         if not any(np.array_equal(mask, arr) for arr in self.contours):
                             self.contours.append(mask)
-                            self.draw_contours(masked_image)
+                            print(True)
                             break
-
+        self.draw_contours(masked_image)
 
     def object_deselector(self, event):
-        print('right clicked')
+        masked_image = np.copy(self.masked_image)
         if len(self.contours) > 0:
             x, y = event.x, event.y
 
             #x = int(x * self.ratio)
             #y = int(y * self.ratio)
 
-            masked_image = np.copy(self.masked_image)
-            for mask in self.contours:
-                if 0 <= y < mask.shape[0] and 0 <= x < mask.shape[1]:
-                    if mask[y, x]:
-                        # Iterate over the list and delete matching arrays
-                        contours_copy = self.contours.copy()  # Create a copy to avoid modifying the list during iteration
-                        for arr in contours_copy:
-                            if isinstance(arr, np.ndarray):
-                                if np.array_equal(arr, mask):
+            new_contours = []
+
+
+            contours_copy = self.contours.copy()
+            if 0 <= y < self.masks[0].shape[0] and 0 <= x < self.masks[0].shape[1]:
+                for mask in self.masks:
+                    if 0 <= y < mask.shape[0] and 0 <= x < mask.shape[1]:
+                        if mask[y, x]:
+                            # Iterate over the list and delete matching arrays
+                             # Create a copy to avoid modifying the list during iteration
+                            for arr in contours_copy:
+                                if isinstance(arr, np.ndarray):
+                                    if np.array_equal(arr, mask):
+                                        print(True)
+                                        #new_contours.append(arr)
+                                        self.contours.remove(arr)
+                                elif any(isinstance(subarr, np.ndarray) and np.array_equal(subarr, mask) for subarr in arr):
                                     print(True)
                                     self.contours.remove(arr)
-                            elif any(isinstance(subarr, np.ndarray) and np.array_equal(subarr, mask) for subarr in arr):
-                                print(True)
-                                self.contours.remove(arr)
-                                self.draw_contours(masked_image)
                                 break
-
+        #self.contours = new_contours
+        self.draw_contours(masked_image)
 
     def draw_contours(self, masked):
 
         if len(self.contours) > 0:
             for mask in self.contours:
-                #mask = np.uint8(mask) * 255
-                #contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                #cv2.drawContours(masked, contours, -1, (0, 0, 0), thickness=3)
-                color = np.random.random_integers(0, 255, 3)
+                mask = np.uint8(mask) * 255
+                contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                cv2.drawContours(masked, contours, -1, (0, 0, 0), thickness=3)
+                #color = np.random.random_integers(0, 255, 3)
                 #color_mask[mask] = color
-                masked[mask] = color
+                #masked[mask] = color
 
-            self.display_image(masked)
+        self.display_image(masked)
 
 
     def masking(self):
