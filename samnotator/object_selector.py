@@ -101,9 +101,9 @@ class Image_Displayer:
             self.fit_image_to_frame()
             self.display_image()
 
-class Mask_Displayer(Image_Displayer):
+class Samnotator(Image_Displayer):
 
-    def __init__(self, root):
+    def __init__(self, root, annotation_path):
 
         super().__init__(root)
         self.anns = None
@@ -111,14 +111,22 @@ class Mask_Displayer(Image_Displayer):
         self.contours = []
         # init button
         self.mask_button = tk.Button(root, text="Mask Generator", command=self.mask_generator)
+        self.submit_button = tk.Button(root, text="Save Annotations", command=self.write_annotations)
 
         self.canvas.bind("<Button-1>", self.object_selector)
         self.canvas.bind("<Button-2>", self.object_deselector)
+
+        self.annotations = []
 
 
     def show_additional_buttons(self):
         self.mask_button.config(state='normal')
         self.mask_button.pack(side=tk.LEFT, padx=5, pady=10)
+        self.submit_button.pack(side=tk.LEFT, padx=5, pady=10)
+        if len(self.contours) > 0:
+            self.submit_button.config(state='normal')
+        self.submit_button.config(state='disabled')
+
         super().show_additional_buttons()
 
 
@@ -149,7 +157,9 @@ class Mask_Displayer(Image_Displayer):
                         if not any(np.array_equal(mask, arr) for arr in self.contours):
                             self.contours.append(mask)
                             break
+
         self.draw_contours(masked_image)
+        self.submit_button.config(state='normal')
 
     def object_deselector(self, event):
         masked_image = np.copy(self.masked_image)
@@ -159,10 +169,7 @@ class Mask_Displayer(Image_Displayer):
             new_contours = []
 
             if 0 <= y < self.masks[0].shape[0] and 0 <= x < self.masks[0].shape[1]:
-                #for mask in self.masks:
-                    #if mask[y, x]:
-                        # Iterate over the list and delete matching arrays
-                         # Create a copy to avoid modifying the list during iteration
+
                 contours_copy = self.contours
                 for mask in contours_copy:
                     if mask[y, x]:
@@ -171,10 +178,11 @@ class Mask_Displayer(Image_Displayer):
                                 self.contours.pop(idx)
                                 break
                         break
-                    #break
-                #self.contours = new_contours
+
 
         self.draw_contours(masked_image)
+        if len(self.contours) > 0:
+            self.submit_button.config(state='normal')
 
     def draw_contours(self, masked):
 
@@ -183,9 +191,7 @@ class Mask_Displayer(Image_Displayer):
                 mask = np.uint8(mask) * 255
                 contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 cv2.drawContours(masked, contours, -1, (0, 0, 0), thickness=3)
-                #color = np.random.random_integers(0, 255, 3)
-                #color_mask[mask] = color
-                #masked[mask] = color
+                self.annotations.append(contours)
 
         self.display_image(masked)
 
@@ -209,7 +215,17 @@ class Mask_Displayer(Image_Displayer):
         self.display_image(self.masked_image)
 
 
+    def write_annotations(self):
 
+        txt = ''
+        #with open(self.annotations, 'w') as f:
+        for ann in self.annotations:
+            for shape in ann:
+                for m in shape:
+                    for p in m:
+                        txt += ' ' + str(p[0]) + ' ' + str(p[1])
+
+            print(txt)
 
 
 
