@@ -60,6 +60,7 @@ class Image_Displayer:
         self.next_button.pack(side=tk.RIGHT, padx=5, pady=10)
         self.prev_button.pack(side=tk.RIGHT, padx=5, pady=10)
 
+
     def display_image(self, image=None):
         if self.image is not None:
             if image is None:
@@ -116,11 +117,13 @@ class Samnotator(Image_Displayer):
         super().__init__(root)
         self.anns = None
         self.masks = []
-        self.contours = []
+        self.masked_image = None
+        self.contours = {}
+        self.selected_masks = {}
 
         # init buttons
         self.mask_button = tk.Button(root, text="Mask Generator", command=self.generating_mask)
-        self.submit_button = tk.Button(root, text="Save Annotations", command=self.write_annotations)
+        self.save_button = tk.Button(root, text="Save Annotations", command=self.write_annotations)
 
         self.load_button.pack_forget()
 
@@ -129,7 +132,7 @@ class Samnotator(Image_Displayer):
         #self.canvas.bind("<Button-1>", self.object_selector)
         #self.canvas.bind("<Button-2>", self.object_deselector)
 
-        self.annotations = {}
+        self.annotation_path = annotation_path
 
 
     def validate_input(self):
@@ -149,6 +152,7 @@ class Samnotator(Image_Displayer):
 
         except ValueError:
             self.num_of_classes_input.set("Invalid input.")
+
 
     def front_page(self):
         '''
@@ -221,7 +225,8 @@ class Samnotator(Image_Displayer):
         self.classes = [cls.get() for cls in classes]
 
         # initialize annotations for each class with an empty list
-        self.annotations = {cls: [] for cls in self.classes}
+        self.selected_masks = {cls: [] for cls in self.classes}
+        self.contours = {cls: [] for cls in self.classes}
         self.hide_buttons()
         self.load_image()
 
@@ -247,16 +252,20 @@ class Samnotator(Image_Displayer):
         # Place the dropdown on the window
         dropdown.pack(side=tk.LEFT, padx=5, pady=20)
 
+
     def update_class(self, *args):
         self.current_class = self.selected_class.get()
+        if self.masked_image is not None:
+            self.draw_contours(np.copy(self.masked_image))
+
 
     def show_additional_buttons(self):
-        self.mask_button.config(state='normal')
+        #self.mask_button.config(state='normal')
         self.mask_button.pack(side=tk.LEFT, padx=5, pady=10)
-        self.submit_button.pack(side=tk.LEFT, padx=5, pady=10)
-        if len(self.contours) > 0:
-            self.submit_button.config(state='normal')
-        self.submit_button.config(state='disabled')
+        self.save_button.pack(side=tk.LEFT, padx=5, pady=10)
+        #if len(self.contours) > 0:
+            #self.save_button.config(state='normal')
+        #self.save_button.config(state='disabled')
 
         super().show_additional_buttons()
 
@@ -270,44 +279,47 @@ class Samnotator(Image_Displayer):
             if 0 <= y < self.masks[0].shape[0] and 0 <= x < self.masks[0].shape[1]:
                 for mask in self.masks:
                     if mask[y, x]:
-                        if not any(np.array_equal(mask, arr) for arr in self.contours):
-                            self.contours.append(mask)
+                        m = np.uint8(mask) * 255
+                        contours, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                        if not any(np.array_equal(contours, arr) for arr in self.contours[self.current_class]):
+                            self.contours[self.current_class].append(contours)
+                            self.selected_masks[self.current_class].append(mask)
                             break
 
         self.draw_contours(masked_image)
-        self.submit_button.config(state='normal')
+        self.save_button.config(state='normal')
 
     def object_deselector(self, event):
         masked_image = np.copy(self.masked_image)
-        if len(self.contours) > 0:
+        if len(self.contours[self.current_class]) > 0:
             x, y = event.x, event.y
-
-            new_contours = []
 
             if 0 <= y < self.masks[0].shape[0] and 0 <= x < self.masks[0].shape[1]:
 
-                contours_copy = self.contours
-                for mask in contours_copy:
+                selected_masks = self.selected_masks[self.current_class]
+                for idx, (mask, contours) in enumerate(zip(selected_masks, selected_masks)):
                     if mask[y, x]:
-                        for idx, arr in enumerate(contours_copy):
-                            if np.array_equal(mask, arr):
-                                self.contours.pop(idx)
-                                break
+                        #m = np.uint8(mask) * 255
+                        #contours, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                        #for idx, arr in enumerate(selected_masks):
+                            #if np.array_equal(contours, arr):
+                        self.contours[self.current_class].pop(idx)
+                        #break
                         break
 
 
         self.draw_contours(masked_image)
-        if len(self.contours) > 0:
-            self.submit_button.config(state='normal')
+        if len(self.contours[self.current_class]) > 0:
+            self.save_button.config(state='normal')
 
     def draw_contours(self, masked):
 
-        if len(self.contours) > 0:
-            for mask in self.contours:
-                mask = np.uint8(mask) * 255
-                contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if len(self.contours[self.current_class]) > 0:
+            for contours in self.contours[self.current_class]:
+                #mask = np.uint8(mask) * 255
+                #contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 cv2.drawContours(masked, contours, -1, (0, 0, 255), thickness=2)
-                self.annotations[self.current_class].append(contours)
+                #self.annotations[self.current_class].append(contours)
 
         self.display_image(masked)
 
@@ -346,14 +358,14 @@ class Samnotator(Image_Displayer):
     def write_annotations(self):
 
         txt = ''
-        #with open(self.annotations, 'w') as f:
-        for ann in self.annotations:
-            for shape in ann:
-                for m in shape:
-                    for p in m:
-                        txt += ' ' + str(p[0]) + ' ' + str(p[1])
-
-            print(txt)
+        with open(self.annotation_path, 'w') as f:
+            for cls, masks in self.contours.items():
+                for contours in masks:
+                    f.write(str(self.classes.index(cls)) + ' ')
+                    for contour in contours:
+                        for point in contour.reshape(-1):
+                            f.write(str(point) + ' ')
+                    f.write('\n')
 
 
 

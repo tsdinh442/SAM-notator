@@ -12,7 +12,7 @@ sam.to(device=device)
 
 mask_generator = SamAutomaticMaskGenerator(
                                             model=sam,
-                                            points_per_side=32,
+                                            points_per_side=2,
                                             pred_iou_thresh=0.9,
                                             stability_score_thresh=0.96,
                                             crop_n_layers=1,
