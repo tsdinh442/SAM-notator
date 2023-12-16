@@ -365,7 +365,7 @@ class Samnotator(Image_Displayer):
                         # Get the bounding box coordinates of the contour
                         x, y, w, h = cv2.boundingRect(contour)
                         # Convert the coordinates to YOLO format and write to file
-                        f.write('0 {:.6f} {:.6f} {:.6f} {:.6f}\n'.format((x + w / 2) / mask.shape[1],
+                        f.write('{:.6f} {:.6f} {:.6f} {:.6f}\n'.format((x + w / 2) / mask.shape[1],
                                                                          (y + h / 2) / mask.shape[0],
                                                                          w / mask.shape[1],
                                                                          h / mask.shape[0]))
