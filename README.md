@@ -1,8 +1,6 @@
 # SAM-notator
-An annotator tool that speeds up the process of selecting objects of interest using SAM
-
-work in progress
+An entry-level approach to build an annotator tool (YOLO format) that speeds up the process of selecting objects of interest using SAM
 
 ### Demo
 
-![demo](images/demo2.png)
+[![Video](https://img.youtube.com/vi/VijYGLsCihM/0.jpg)](https://www.youtube.com/watch?v=VijYGLsCihM)

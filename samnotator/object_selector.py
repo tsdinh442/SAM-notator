@@ -6,6 +6,8 @@ from tkinter import ttk
 from tkinter import filedialog
 from PIL import Image, ImageTk
 from sam import mask_generator
+from pycocotools import mask as maskUtils
+
 
 class Image_Displayer:
     def __init__(self, root):
@@ -297,14 +299,9 @@ class Samnotator(Image_Displayer):
             if 0 <= y < self.masks[0].shape[0] and 0 <= x < self.masks[0].shape[1]:
 
                 selected_masks = self.selected_masks[self.current_class]
-                for idx, (mask, contours) in enumerate(zip(selected_masks, selected_masks)):
+                for idx, mask in enumerate(selected_masks):
                     if mask[y, x]:
-                        #m = np.uint8(mask) * 255
-                        #contours, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                        #for idx, arr in enumerate(selected_masks):
-                            #if np.array_equal(contours, arr):
                         self.contours[self.current_class].pop(idx)
-                        #break
                         break
 
 
@@ -360,12 +357,18 @@ class Samnotator(Image_Displayer):
         txt = ''
         with open(self.annotation_path, 'w') as f:
             for cls, masks in self.contours.items():
+                mask = self.selected_masks[cls][0]
                 for contours in masks:
                     f.write(str(self.classes.index(cls)) + ' ')
                     for contour in contours:
-                        for point in contour.reshape(-1):
-                            f.write(str(point) + ' ')
-                    f.write('\n')
+
+                        # Get the bounding box coordinates of the contour
+                        x, y, w, h = cv2.boundingRect(contour)
+                        # Convert the coordinates to YOLO format and write to file
+                        f.write('0 {:.6f} {:.6f} {:.6f} {:.6f}\n'.format((x + w / 2) / mask.shape[1],
+                                                                         (y + h / 2) / mask.shape[0],
+                                                                         w / mask.shape[1],
+                                                                         h / mask.shape[0]))
 
 
 

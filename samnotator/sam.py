@@ -7,7 +7,7 @@ print(device)
 
 check_point = 'models/sam_vit_h_4b8939.pth'
 
-sam = sam_model_registry["default"](checkpoint=check_point)
+sam = sam_model_registry["vit_h"](checkpoint=check_point)
 sam.to(device=device)
 
 mask_generator = SamAutomaticMaskGenerator(
