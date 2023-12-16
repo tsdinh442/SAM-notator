@@ -3,6 +3,7 @@ import torch
 
 
 device = 'mps' if torch.backends.mps.is_available() else 'cpu'
+print(device)
 
 check_point = 'models/sam_vit_h_4b8939.pth'
 
@@ -11,7 +12,7 @@ sam.to(device=device)
 
 mask_generator = SamAutomaticMaskGenerator(
                                             model=sam,
-                                            points_per_side=5,
+                                            points_per_side=32,
                                             pred_iou_thresh=0.9,
                                             stability_score_thresh=0.96,
                                             crop_n_layers=1,

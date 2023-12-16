@@ -2,6 +2,7 @@ import tkinter
 import cv2
 import numpy as np
 import tkinter as tk
+from tkinter import ttk
 from tkinter import filedialog
 from PIL import Image, ImageTk
 from sam import mask_generator
@@ -33,22 +34,31 @@ class Image_Displayer:
         if self.file_paths:
             self.current_image_index = 0
 
-            image = cv2.imread(self.file_paths[self.current_image_index])
-            self.image = self.resize_image(image)
+            self.resize_image()
 
             self.show_additional_buttons()
 
             self.display_image()
 
-    def resize_image(self, image):
+
+    def resize_image(self):
+
+        image = cv2.imread(self.file_paths[self.current_image_index])
 
         height, width, _ = image.shape
+
         self.ratio = width / height
         # define new image height
         self.HEIGHT = 600
         self.WIDTH = int(self.HEIGHT * self.ratio)
 
-        return cv2.resize(image, (self.WIDTH, self.HEIGHT))
+        self.image = cv2.resize(image, (self.WIDTH, self.HEIGHT))
+
+
+    def show_additional_buttons(self):
+        self.check_image_index()
+        self.next_button.pack(side=tk.RIGHT, padx=5, pady=10)
+        self.prev_button.pack(side=tk.RIGHT, padx=5, pady=10)
 
     def display_image(self, image=None):
         if self.image is not None:
@@ -67,10 +77,6 @@ class Image_Displayer:
             self.canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
             self.canvas.image = image_tk
 
-    def show_additional_buttons(self):
-        self.check_image_index()
-        self.next_button.pack(side=tk.RIGHT, padx=5, pady=10)
-        self.prev_button.pack(side=tk.RIGHT, padx=5, pady=10)
 
     def check_image_index(self):
 
@@ -85,20 +91,22 @@ class Image_Displayer:
         elif self.current_image_index == len(self.file_paths) - 1:
             self.next_button.config(state='disabled')
 
+
     def show_next_image(self):
         self.current_image_index += 1
         self.check_image_index()
 
         if self.current_image_index < len(self.file_paths):
-            self.fit_image_to_frame()
+            self.resize_image()
             self.display_image()
+
 
     def show_prev_image(self):
         self.current_image_index -= 1
         self.check_image_index()
 
         if self.current_image_index < len(self.file_paths):
-            self.fit_image_to_frame()
+            self.resize_image()
             self.display_image()
 
 class Samnotator(Image_Displayer):
@@ -109,15 +117,138 @@ class Samnotator(Image_Displayer):
         self.anns = None
         self.masks = []
         self.contours = []
-        # init button
-        self.mask_button = tk.Button(root, text="Mask Generator", command=self.mask_generator)
+
+        # init buttons
+        self.mask_button = tk.Button(root, text="Mask Generator", command=self.generating_mask)
         self.submit_button = tk.Button(root, text="Save Annotations", command=self.write_annotations)
 
-        self.canvas.bind("<Button-1>", self.object_selector)
-        self.canvas.bind("<Button-2>", self.object_deselector)
+        self.load_button.pack_forget()
 
-        self.annotations = []
+        self.front_page()
 
+        #self.canvas.bind("<Button-1>", self.object_selector)
+        #self.canvas.bind("<Button-2>", self.object_deselector)
+
+        self.annotations = {}
+
+
+    def validate_input(self):
+        '''
+        validating if inputs are integers greater than 0
+        :return: None
+        '''
+        try:
+            # Try to convert the entered value to an integer
+            value = int(self.num_of_classes_input.get())
+            # Check if the value is greater than 0
+            if value > 0:
+                self.number_of_classes = value
+                self.second_page()
+            else:
+                self.num_of_classes_input.set("Invalid input.")
+
+        except ValueError:
+            self.num_of_classes_input.set("Invalid input.")
+
+    def front_page(self):
+        '''
+        displaying the entry box asking users to enter how many classes there are
+        :return:
+        '''
+        # set default number of parking types
+        self.number_of_classes = 1
+
+        # label of the entry box
+        self.num_of_classes_label = tk.Label(self.root, text="How many classes? ")
+        self.num_of_classes_label.pack(side=tk.LEFT, padx=5, pady=10)
+
+        # define entry box
+        self.num_of_classes_input = tk.StringVar()
+        self.num_of_classes_entry_box = tk.Entry(self.root, textvariable=self.num_of_classes_input)
+        self.num_of_classes_entry_box.pack(side=tk.LEFT, padx=5, pady=10)
+
+        # Submit button
+        self.num_of_classes_button = tk.Button(self.root, text="Enter", command=self.validate_input)
+        self.num_of_classes_button.pack(side=tk.LEFT, padx=5, pady=10)
+
+    def second_page(self):
+        '''
+        display entry boxes for users to enter the name of each class
+        :return:
+        '''
+        self.canvas.create_text(100, 30, text='Enter the name of each class', font=('Arial', 12), fill="black",
+                                anchor=tk.NW)
+        # define the location of each box
+        starting_position_x, starting_position_y = 100, 50
+
+        classes = []
+
+        for i in range(self.number_of_classes):
+            # display the label of each entry box
+            label = tk.Label(self.canvas, text=f'Class {i + 1}: ')
+            self.canvas.create_window(starting_position_x, starting_position_y + (i + 1) * 50,
+                                      window=label, anchor=tk.NW)
+
+            # diplay each entry box
+            user_input = tk.StringVar()
+            entry_box = tk.Entry(self.canvas, textvariable=user_input)
+            self.canvas.create_window(starting_position_x + 100, starting_position_y + (i + 1) * 50,
+                                      window=entry_box, anchor=tk.NW)
+            classes.append(user_input)
+
+            # dsiplay the submit button
+            submit_button = tk.Button(self.canvas, text='Submit', command=lambda: self.get_classes(classes))
+            self.canvas.create_window(starting_position_x, starting_position_y + (self.number_of_classes + 1) * 50,
+                                      window=submit_button, anchor=tk.NW)
+
+    def hide_buttons(self):
+        '''
+        display a button to select images
+        :return:
+        '''
+
+        self.canvas.delete('all')
+        self.canvas.config()
+        #self.load_button.pack(side=tk.LEFT, padx=5, pady=10)
+
+        # hide not-needed buttons
+        self.num_of_classes_label.pack_forget()
+        self.num_of_classes_entry_box.pack_forget()
+        self.num_of_classes_button.pack_forget()
+
+
+    def get_classes(self, classes):
+        self.classes = [cls.get() for cls in classes]
+
+        # initialize annotations for each class with an empty list
+        self.annotations = {cls: [] for cls in self.classes}
+        self.hide_buttons()
+        self.load_image()
+
+    def drop_down_display(self):
+
+        # create labels
+        dropdown_label = tk.Label(self.root, text="Select a class: ")
+        dropdown_label.pack(side=tk.LEFT, padx=5, pady=10)
+
+        # Create a StringVar to store the selected option
+        self.selected_class = tk.StringVar()
+        self.selected_class.trace_add("write", self.update_class)
+
+        # Create a Combobox
+        dropdown = ttk.Combobox(self.root, textvariable=self.selected_class)
+
+        # Set options for the dropdown
+        dropdown['values'] = self.classes
+
+        # Set a default value for the dropdown
+        dropdown.set(self.classes[0])
+
+        # Place the dropdown on the window
+        dropdown.pack(side=tk.LEFT, padx=5, pady=20)
+
+    def update_class(self, *args):
+        self.current_class = self.selected_class.get()
 
     def show_additional_buttons(self):
         self.mask_button.config(state='normal')
@@ -128,21 +259,6 @@ class Samnotator(Image_Displayer):
         self.submit_button.config(state='disabled')
 
         super().show_additional_buttons()
-
-
-    def mask_generator(self):
-
-        image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
-        self.anns = mask_generator.generate(image)
-
-        for idx, ann in enumerate(self.anns):
-            mask = ann['segmentation']
-            #mask = np.uint8(ann['segmentation']) * 255
-            #cv2.imwrite(f'output/{idx}.jpg', mask)
-            self.masks.append(mask)
-
-        self.mask_button.config(state='disabled')
-        self.masking()
 
 
     def object_selector(self, event):
@@ -190,11 +306,21 @@ class Samnotator(Image_Displayer):
             for mask in self.contours:
                 mask = np.uint8(mask) * 255
                 contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                cv2.drawContours(masked, contours, -1, (0, 0, 0), thickness=3)
-                self.annotations.append(contours)
+                cv2.drawContours(masked, contours, -1, (0, 0, 255), thickness=2)
+                self.annotations[self.current_class].append(contours)
 
         self.display_image(masked)
 
+    def generating_mask(self):
+
+        image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+        self.anns = mask_generator.generate(image)
+
+        for idx, ann in enumerate(self.anns):
+            mask = ann['segmentation']
+            self.masks.append(mask)
+        self.drop_down_display()
+        self.masking()
 
     def masking(self):
 
@@ -213,6 +339,8 @@ class Samnotator(Image_Displayer):
             cv2.addWeighted(color_mask, opacity, self.masked_image, 1 - opacity, 0, self.masked_image)
 
         self.display_image(self.masked_image)
+        self.canvas.bind("<Button-1>", self.object_selector)
+        self.canvas.bind("<Button-2>", self.object_deselector)
 
 
     def write_annotations(self):
