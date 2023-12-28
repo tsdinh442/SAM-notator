@@ -1,4 +1,4 @@
-from segment_anything import SamAutomaticMaskGenerator, sam_model_registry
+from segment_anything import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
 import torch
 
 
@@ -20,3 +20,4 @@ mask_generator = SamAutomaticMaskGenerator(
                                             min_mask_region_area=100, # Requires open-cv to run post-processing
                                             )
 
+predictor = SamPredictor(sam)

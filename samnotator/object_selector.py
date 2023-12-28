@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from PIL import Image, ImageTk
-from sam import mask_generator
+from sam import mask_generator, predictor
 from pycocotools import mask as maskUtils
 
 
@@ -64,12 +64,14 @@ class Image_Displayer:
 
 
     def display_image(self, image=None):
+
         if self.image is not None:
             if image is None:
                 image = self.image
 
             # Convert image from BGR to RGB for Tkinter
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            #image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            image_rgb = image
 
             # Convert to PhotoImage format
             image_tk = Image.fromarray(image_rgb)
@@ -135,6 +137,8 @@ class Samnotator(Image_Displayer):
         #self.canvas.bind("<Button-2>", self.object_deselector)
 
         self.annotation_path = annotation_path
+
+        self.canvas.bind("<Button-1>", self.segment)
 
 
     def validate_input(self):
@@ -328,6 +332,7 @@ class Samnotator(Image_Displayer):
         for idx, ann in enumerate(self.anns):
             mask = ann['segmentation']
             self.masks.append(mask)
+
         self.drop_down_display()
         self.masking()
 
@@ -348,9 +353,27 @@ class Samnotator(Image_Displayer):
             cv2.addWeighted(color_mask, opacity, self.masked_image, 1 - opacity, 0, self.masked_image)
 
         self.display_image(self.masked_image)
-        self.canvas.bind("<Button-1>", self.object_selector)
-        self.canvas.bind("<Button-2>", self.object_deselector)
+        #self.canvas.bind("<Button-1>", self.object_selector)
+        #self.canvas.bind("<Button-2>", self.object_deselector)
 
+    def segment(self, event):
+
+        x, y = event.x, event.y
+
+        input_point = np.array([[x, y]])
+        input_label = np.array([1])
+
+        predictor.set_image(self.image)
+
+        masks, scores, logits = predictor.predict(
+            point_coords=input_point,
+            point_labels=input_label,
+            multimask_output=True,
+        )
+
+        print(x, y)
+
+        self.display_image(masks[0])
 
     def write_annotations(self):
 
@@ -361,7 +384,6 @@ class Samnotator(Image_Displayer):
                 for contours in masks:
                     f.write(str(self.classes.index(cls)) + ' ')
                     for contour in contours:
-
                         # Get the bounding box coordinates of the contour
                         x, y, w, h = cv2.boundingRect(contour)
                         # Convert the coordinates to YOLO format and write to file
