@@ -70,8 +70,8 @@ class Image_Displayer:
                 image = self.image
 
             # Convert image from BGR to RGB for Tkinter
-            #image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            image_rgb = image
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            #image_rgb = image
 
             # Convert to PhotoImage format
             image_tk = Image.fromarray(image_rgb)
@@ -313,16 +313,21 @@ class Samnotator(Image_Displayer):
         if len(self.contours[self.current_class]) > 0:
             self.save_button.config(state='normal')
 
-    def draw_contours(self, masked):
+    def draw_contours(self, mask):
+        image = np.copy(self.image)
+        #if len(self.contours[self.current_class]) > 0:
+        #    for contours in self.contours[self.current_class]:
+        #        #mask = np.uint8(mask) * 255
+        #        #contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        #        cv2.drawContours(masked, contours, -1, (0, 0, 255), thickness=2)
+        #        #self.annotations[self.current_class].append(contours)
 
-        if len(self.contours[self.current_class]) > 0:
-            for contours in self.contours[self.current_class]:
-                #mask = np.uint8(mask) * 255
-                #contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                cv2.drawContours(masked, contours, -1, (0, 0, 255), thickness=2)
-                #self.annotations[self.current_class].append(contours)
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        self.display_image(masked)
+        cv2.drawContours(image, contours, -1, (0, 0, 255), thickness=2)
+
+
+        self.display_image(image)
 
     def generating_mask(self):
 
@@ -371,9 +376,8 @@ class Samnotator(Image_Displayer):
             multimask_output=True,
         )
 
-        print(x, y)
-
-        self.display_image(masks[0])
+        mask = np.uint8(masks[0]) * 255
+        self.draw_contours(mask)
 
     def write_annotations(self):
 
