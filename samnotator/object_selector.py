@@ -124,6 +124,7 @@ class Samnotator(Image_Displayer):
         self.masked_image = None
         self.contours = {}
         self.selected_masks = {}
+        #self.classes = {}
         self.input_points = []
         self.input_labels = []
 
@@ -271,6 +272,7 @@ class Samnotator(Image_Displayer):
         #self.mask_button.config(state='normal')
         self.mask_button.pack(side=tk.LEFT, padx=5, pady=10)
         self.save_button.pack(side=tk.LEFT, padx=5, pady=10)
+        self.drop_down_display()
         #if len(self.contours) > 0:
             #self.save_button.config(state='normal')
         #self.save_button.config(state='disabled')
@@ -368,6 +370,7 @@ class Samnotator(Image_Displayer):
         x, y = event.x, event.y
         self.input_points.append([x, y])
         self.input_labels.append(1)
+        print(self.input_labels)
         input_point = np.array(self.input_points)
         input_label = np.array(self.input_labels)
 
