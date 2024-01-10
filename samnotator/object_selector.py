@@ -9,6 +9,10 @@ from sam import mask_generator, predictor
 from pycocotools import mask as maskUtils
 
 
+def get_random_colors(number_of_colors):
+    random_colors = np.random.randint(0, 256, size=(number_of_colors, 3))
+    return random_colors
+
 class Image_Displayer:
     def __init__(self, root):
 
@@ -119,13 +123,14 @@ class Samnotator(Image_Displayer):
     def __init__(self, root, annotation_path):
 
         super().__init__(root)
+        self.colors = []
         self.anns = None
         self.mask = None
         self.masks = []
         self.masked_image = None
         self.contours = {}
         self.selected_masks = {}
-        #self.classes = {}
+
         self.input_points = []
         self.input_labels = []
 
@@ -232,11 +237,15 @@ class Samnotator(Image_Displayer):
 
 
     def get_classes(self, classes):
+
+        # get the name of each class
         self.classes = [cls.get() for cls in classes]
 
         # initialize annotations for each class with an empty list
-        self.selected_masks = {cls: [] for cls in self.classes}
         self.contours = {idx: [] for idx in range(len(self.classes))}
+        # assign a random color for each class
+        self.colors = get_random_colors(len(self.classes))
+
         self.hide_buttons()
         self.load_image()
 
@@ -269,13 +278,9 @@ class Samnotator(Image_Displayer):
 
 
     def show_additional_buttons(self):
-        #self.mask_button.config(state='normal')
-        #self.mask_button.pack(side=tk.LEFT, padx=5, pady=10)
+
         self.save_button.pack(side=tk.LEFT, padx=5, pady=10)
         self.drop_down_display()
-        #if len(self.contours) > 0:
-            #self.save_button.config(state='normal')
-        #self.save_button.config(state='disabled')
 
         super().show_additional_buttons()
 
@@ -321,32 +326,30 @@ class Samnotator(Image_Displayer):
     def add_annotations(self, mask):
         if mask is not None:
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            self.contours[self.current_class].append(contours)
+            self.contours[self.current_class].append(contours[0])
 
             # reset mask, input points and labels
             self.input_points = []
             self.input_labels = []
             self.mask = None
-
-            cv2.drawContours(self.image, contours, -1, (255, 0, 255), thickness=2)
+            color = tuple(int(c) for c in self.colors[self.current_class])
+            cv2.drawContours(self.image, contours, -1, color=color, thickness=2)
             self.display_image()
 
     def write_annotations(self):
-
+        print(self.image.shape)
         txt = ''
         with open(self.annotation_path, 'w') as f:
-            for cls, masks in self.contours.items():
-                mask = self.selected_masks[cls][0]
-                for contours in masks:
-                    f.write(str(self.classes.index(cls)) + ' ')
-                    for contour in contours:
-                        # Get the bounding box coordinates of the contour
-                        x, y, w, h = cv2.boundingRect(contour)
-                        # Convert the coordinates to YOLO format and write to file
-                        f.write('{:.6f} {:.6f} {:.6f} {:.6f}\n'.format((x + w / 2) / mask.shape[1],
-                                                                         (y + h / 2) / mask.shape[0],
-                                                                         w / mask.shape[1],
-                                                                         h / mask.shape[0]))
+            for cls, contours in self.contours.items():
+                for contour in contours:
+                    f.write(str(cls) + ' ')
+                    # Get the bounding box coordinates of the contour
+                    x, y, w, h = cv2.boundingRect(contour)
+                    # Convert the coordinates to YOLO format and write to file
+                    f.write('{:.6f} {:.6f} {:.6f} {:.6f}\n'.format((x + w / 2) / self.image.shape[1],
+                                                                     (y + h / 2) / self.image.shape[0],
+                                                                     w / self.image.shape[1],
+                                                                     h / self.image.shape[0]))
 
 
 
