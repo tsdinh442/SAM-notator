@@ -124,6 +124,8 @@ class Samnotator(Image_Displayer):
         self.masked_image = None
         self.contours = {}
         self.selected_masks = {}
+        self.input_points = []
+        self.input_labels = []
 
         # init buttons
         self.mask_button = tk.Button(root, text="Mask Generator", command=self.generating_mask)
@@ -364,19 +366,31 @@ class Samnotator(Image_Displayer):
     def segment(self, event):
 
         x, y = event.x, event.y
-
-        input_point = np.array([[x, y]])
-        input_label = np.array([1])
+        self.input_points.append([x, y])
+        self.input_labels.append(1)
+        input_point = np.array(self.input_points)
+        input_label = np.array(self.input_labels)
 
         predictor.set_image(self.image)
 
-        masks, scores, logits = predictor.predict(
-            point_coords=input_point,
-            point_labels=input_label,
-            multimask_output=True,
-        )
+        if len(input_point) == 1:
+            masks, self.scores, self.logits = predictor.predict(
+                point_coords=input_point,
+                point_labels=input_label,
+                multimask_output=True,
+            )
+
+        elif len(input_point) > 1:
+            mask_input = self.logits[np.argmax(self.scores), :, :]  # Choose the model's best mask
+            masks, _, _ = predictor.predict(
+                point_coords=input_point,
+                point_labels=input_label,
+                mask_input=mask_input[None, :, :],
+                multimask_output=False,
+            )
 
         mask = np.uint8(masks[0]) * 255
+
         self.draw_contours(mask)
 
     def write_annotations(self):
