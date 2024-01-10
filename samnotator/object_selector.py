@@ -118,43 +118,17 @@ class Image_Displayer:
             self.resize_image()
             self.display_image()
 
-class Samnotator(Image_Displayer):
+class Interface(Image_Displayer):
 
-    def __init__(self, root, annotation_path):
-
+    def __init__(self, root):
         super().__init__(root)
-        self.colors = []
-        self.anns = None
-        self.mask = None
-        self.masks = []
-        self.masked_image = None
-        self.contours = {}
-        self.selected_masks = {}
-
-        self.input_points = []
-        self.input_labels = []
-
-        # init buttons
-        self.save_button = tk.Button(root, text="Save Annotations", command=self.write_annotations)
-        self.add_button = tk.Button(self.root, text="Add", command=lambda: self.add_annotations(self.mask))
-
-        self.load_button.pack_forget()
-
-        self.front_page()
-
-        #self.canvas.bind("<Button-1>", self.object_selector)
-        #self.canvas.bind("<Button-2>", self.object_deselector)
-
-        self.annotation_path = annotation_path
-
-        self.canvas.bind("<Button-1>", self.segment)
-
+        self.selected_class = None
 
     def validate_input(self):
-        '''
+        """
         validating if inputs are integers greater than 0
         :return: None
-        '''
+        """
         try:
             # Try to convert the entered value to an integer
             value = int(self.num_of_classes_input.get())
@@ -168,12 +142,11 @@ class Samnotator(Image_Displayer):
         except ValueError:
             self.num_of_classes_input.set("Invalid input.")
 
-
     def front_page(self):
-        '''
+        """
         displaying the entry box asking users to enter how many classes there are
         :return:
-        '''
+        """
         # set default number of parking types
         self.number_of_classes = 1
 
@@ -191,10 +164,11 @@ class Samnotator(Image_Displayer):
         self.num_of_classes_button.pack(side=tk.LEFT, padx=5, pady=10)
 
     def second_page(self):
-        '''
+        """
         display entry boxes for users to enter the name of each class
         :return:
-        '''
+        """
+
         self.canvas.create_text(100, 30, text='Enter the name of each class', font=('Arial', 12), fill="black",
                                 anchor=tk.NW)
         # define the location of each box
@@ -221,33 +195,18 @@ class Samnotator(Image_Displayer):
                                       window=submit_button, anchor=tk.NW)
 
     def hide_buttons(self):
-        '''
+        """
         display a button to select images
         :return:
-        '''
+        """
 
         self.canvas.delete('all')
         self.canvas.config()
-        #self.load_button.pack(side=tk.LEFT, padx=5, pady=10)
 
         # hide not-needed buttons
         self.num_of_classes_label.pack_forget()
         self.num_of_classes_entry_box.pack_forget()
         self.num_of_classes_button.pack_forget()
-
-
-    def get_classes(self, classes):
-
-        # get the name of each class
-        self.classes = [cls.get() for cls in classes]
-
-        # initialize annotations for each class with an empty list
-        self.contours = {idx: [] for idx in range(len(self.classes))}
-        # assign a random color for each class
-        self.colors = get_random_colors(len(self.classes))
-
-        self.hide_buttons()
-        self.load_image()
 
     def drop_down_display(self):
 
@@ -270,6 +229,49 @@ class Samnotator(Image_Displayer):
 
         # Place the dropdown on the window
         dropdown.pack(side=tk.LEFT, padx=5, pady=20)
+
+
+class Samnotator(Interface):
+
+    def __init__(self, root, annotation_path):
+
+        super().__init__(root)
+        self.colors = []
+        self.anns = None
+        self.mask = None
+        self.masks = []
+        self.masked_image = None
+        self.contours = {}
+        self.selected_masks = {}
+
+        self.input_points = []
+        self.input_labels = []
+
+        # init buttons
+        self.save_button = tk.Button(root, text="Save Annotations", command=self.write_annotations)
+        self.add_button = tk.Button(self.root, text="Add", command=lambda: self.add_annotations(self.mask))
+
+        self.load_button.pack_forget()
+
+        self.front_page()
+
+        self.annotation_path = annotation_path
+
+        self.canvas.bind("<Button-1>", self.segment)
+
+
+    def get_classes(self, classes):
+
+        # get the name of each class
+        self.classes = [cls.get() for cls in classes]
+
+        # initialize annotations for each class with an empty list
+        self.contours = {idx: [] for idx in range(len(self.classes))}
+        # assign a random color for each class
+        self.colors = get_random_colors(len(self.classes))
+
+        self.hide_buttons()
+        self.load_image()
 
 
     def update_class(self, *args):
@@ -323,6 +325,7 @@ class Samnotator(Image_Displayer):
         self.draw_contours(self.mask)
         self.add_button.pack(side=tk.LEFT, padx=5, pady=10)
 
+
     def add_annotations(self, mask):
         if mask is not None:
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -335,6 +338,7 @@ class Samnotator(Image_Displayer):
             color = tuple(int(c) for c in self.colors[self.current_class])
             cv2.drawContours(self.image, contours, -1, color=color, thickness=2)
             self.display_image()
+
 
     def write_annotations(self):
         print(self.image.shape)
