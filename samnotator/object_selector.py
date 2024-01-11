@@ -275,7 +275,8 @@ class Samnotator(Interface):
 
         self.annotation_path = annotation_path
 
-        self.canvas.bind("<Button-1>", self.segment)
+        self.canvas.bind("<Button-1>", self.selector)
+        self.canvas.bind("<Button-2>", self.deselector)
 
 
     def get_classes(self, classes):
@@ -295,11 +296,25 @@ class Samnotator(Interface):
 
         self.display_image(image)
 
-    def segment(self, event):
+    def selector(self, event):
 
         x, y = event.x, event.y
         self.input_points.append([x, y])
         self.input_labels.append(1)
+
+        self.segment()
+
+    def deselector(self, event):
+
+        #x, y = event.x, event.y
+
+        self.input_points.pop()
+        self.input_labels.pop()
+
+        self.segment()
+
+    def segment(self):
+
         input_point = np.array(self.input_points)
         input_label = np.array(self.input_labels)
 
@@ -321,7 +336,10 @@ class Samnotator(Interface):
                 multimask_output=False,
             )
 
-        self.mask = np.uint8(masks[0]) * 255
+        if len(input_point) == 0:
+            self.mask = None
+        else:
+            self.mask = np.uint8(masks[0]) * 255
 
         self.draw_contours(self.mask)
         self.add_button.pack(side=tk.LEFT, padx=5, pady=10)
