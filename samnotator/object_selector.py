@@ -196,7 +196,6 @@ class Interface(Image_Displayer):
 
     def hide_buttons(self):
         """
-        display a button to select images
         :return:
         """
 
@@ -207,6 +206,14 @@ class Interface(Image_Displayer):
         self.num_of_classes_label.pack_forget()
         self.num_of_classes_entry_box.pack_forget()
         self.num_of_classes_button.pack_forget()
+
+    def show_additional_buttons(self):
+
+        self.save_button.pack(side=tk.LEFT, padx=5, pady=10)
+        self.drop_down_display()
+
+        super().show_additional_buttons()
+
 
     def drop_down_display(self):
 
@@ -230,6 +237,18 @@ class Interface(Image_Displayer):
         # Place the dropdown on the window
         dropdown.pack(side=tk.LEFT, padx=5, pady=20)
 
+    def get_classes(self, classes):
+
+        # get the name of each class
+        self.classes = [cls.get() for cls in classes]
+
+        self.hide_buttons()
+        self.load_image()
+
+    def update_class(self, *args):
+        current_class = self.selected_class.get()
+        self.current_class = self.classes.index(current_class)
+
 
 class Samnotator(Interface):
 
@@ -242,7 +261,6 @@ class Samnotator(Interface):
         self.masks = []
         self.masked_image = None
         self.contours = {}
-        self.selected_masks = {}
 
         self.input_points = []
         self.input_labels = []
@@ -262,30 +280,13 @@ class Samnotator(Interface):
 
     def get_classes(self, classes):
 
-        # get the name of each class
-        self.classes = [cls.get() for cls in classes]
+        super().get_classes(classes)
 
         # initialize annotations for each class with an empty list
         self.contours = {idx: [] for idx in range(len(self.classes))}
+
         # assign a random color for each class
         self.colors = get_random_colors(len(self.classes))
-
-        self.hide_buttons()
-        self.load_image()
-
-
-    def update_class(self, *args):
-        current_class = self.selected_class.get()
-        self.current_class = self.classes.index(current_class)
-
-
-    def show_additional_buttons(self):
-
-        self.save_button.pack(side=tk.LEFT, padx=5, pady=10)
-        self.drop_down_display()
-
-        super().show_additional_buttons()
-
 
     def draw_contours(self, mask):
         image = np.copy(self.image)
@@ -341,7 +342,6 @@ class Samnotator(Interface):
 
 
     def write_annotations(self):
-        print(self.image.shape)
         txt = ''
         with open(self.annotation_path, 'w') as f:
             for cls, contours in self.contours.items():
