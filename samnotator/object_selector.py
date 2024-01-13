@@ -44,7 +44,7 @@ class Image_Displayer:
 
             self.show_additional_buttons()
 
-            self.display_image()
+            self.display_image(self.image)
 
 
     def resize_image(self):
@@ -67,11 +67,10 @@ class Image_Displayer:
         self.prev_button.pack(side=tk.RIGHT, padx=5, pady=10)
 
 
-    def display_image(self, image=None):
+    def display_image(self, image):
 
-        if self.image is not None:
-            if image is None:
-                image = self.image
+        if image is not None:
+            #image = self.image
 
             # Convert image from BGR to RGB for Tkinter
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -107,7 +106,7 @@ class Image_Displayer:
 
         if self.current_image_index < len(self.file_paths):
             self.resize_image()
-            self.display_image()
+            self.display_image(self.image)
 
 
     def show_prev_image(self):
@@ -116,7 +115,7 @@ class Image_Displayer:
 
         if self.current_image_index < len(self.file_paths):
             self.resize_image()
-            self.display_image()
+            self.display_image(self.image)
 
 class Interface(Image_Displayer):
 
@@ -275,9 +274,10 @@ class Samnotator(Interface):
 
         self.annotation_path = annotation_path
 
+    def display_image(self, image):
+        super().display_image(image)
         self.canvas.bind("<Button-1>", self.selector)
         self.canvas.bind("<Button-2>", self.deselector)
-
 
     def get_classes(self, classes):
 
@@ -293,7 +293,7 @@ class Samnotator(Interface):
         image = np.copy(self.image)
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cv2.drawContours(image, contours, -1, (0, 0, 255), thickness=2)
-
+        print(image is None)
         self.display_image(image)
 
     def selector(self, event):
@@ -306,10 +306,10 @@ class Samnotator(Interface):
 
     def deselector(self, event):
 
-        #x, y = event.x, event.y
+        x, y = event.x, event.y
 
-        self.input_points.pop()
-        self.input_labels.pop()
+        self.input_points.append([x, y])
+        self.input_labels.append(0)
 
         self.segment()
 
@@ -356,7 +356,7 @@ class Samnotator(Interface):
             self.mask = None
             color = tuple(int(c) for c in self.colors[self.current_class])
             cv2.drawContours(self.image, contours, -1, color=color, thickness=2)
-            self.display_image()
+            self.display_image(self.image)
 
 
     def write_annotations(self):
