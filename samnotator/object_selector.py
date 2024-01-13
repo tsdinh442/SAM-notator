@@ -1,5 +1,6 @@
 import tkinter
 import cv2
+import os
 import numpy as np
 import tkinter as tk
 from tkinter import ttk
@@ -21,6 +22,9 @@ class Image_Displayer:
 
         self.image = None
         self.number_of_images = 0
+        self.file_paths = None
+        self.file_names = []
+        self.current_image_index = 0
 
         self.canvas = tkinter.Canvas(root, width=800, height=600, bg='white')
         self.canvas.pack()
@@ -35,13 +39,14 @@ class Image_Displayer:
         self.prev_button.pack_forget()
 
     def load_image(self):
+
         self.file_paths = filedialog.askopenfilenames(title="Select Images",
                                                       filetypes=[("Image files", "*.png *.jpg *.jpeg")])
 
         self.number_of_images = len(self.file_paths)
+        self.file_names = [os.path.basename(file_path) for file_path in self.root.tk.splitlist(self.file_paths)]
 
         if self.file_paths:
-            self.current_image_index = 0
 
             self.resize_image()
 
@@ -262,7 +267,7 @@ class Samnotator(Interface):
         self.mask = None
         self.masks = []
         self.masked_image = None
-        self.contours = {}
+        self.contours = []
         self.annotated_images = []
 
         self.input_points = []
@@ -281,6 +286,8 @@ class Samnotator(Interface):
     def load_image(self):
         super().load_image()
         self.annotated_images = [None] * self.number_of_images
+        self.contours = [None] * self.number_of_images
+
     def display_image(self, image):
         super().display_image(image)
         self.canvas.bind("<Button-1>", self.selector)
@@ -291,7 +298,7 @@ class Samnotator(Interface):
         super().get_classes(classes)
 
         # initialize annotations for each class with an empty list
-        self.contours = {idx: [] for idx in range(len(self.classes))}
+        self.contours = [{idx: [] for idx in range(len(self.classes))} for i in range(self.number_of_images)]
 
         # assign a random color for each class
         self.colors = get_random_colors(len(self.classes))
@@ -359,7 +366,7 @@ class Samnotator(Interface):
     def add_annotations(self, mask):
         if mask is not None:
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            self.contours[self.current_class].append(contours[0])
+            self.contours[self.current_image_index][self.current_class].append(contours[0])
 
             # reset mask, input points and labels
             self.input_points = []
@@ -380,18 +387,23 @@ class Samnotator(Interface):
 
 
     def write_annotations(self):
-        txt = ''
-        with open(self.annotation_path, 'w') as f:
-            for cls, contours in self.contours.items():
-                for contour in contours:
-                    f.write(str(cls) + ' ')
-                    # Get the bounding box coordinates of the contour
-                    x, y, w, h = cv2.boundingRect(contour)
-                    # Convert the coordinates to YOLO format and write to file
-                    f.write('{:.6f} {:.6f} {:.6f} {:.6f}\n'.format((x + w / 2) / self.image.shape[1],
-                                                                     (y + h / 2) / self.image.shape[0],
-                                                                     w / self.image.shape[1],
-                                                                     h / self.image.shape[0]))
+
+
+        for idx, item in enumerate(self.contours):
+            file_name = self.file_names[idx]
+            file_name = file_name.split('.')[0]
+            file_name += '.txt'
+            with open(self.annotation_path + file_name, 'w') as f:
+                for cls, contours in item.items():
+                    for contour in contours:
+                        f.write(str(cls) + ' ')
+                        # Get the bounding box coordinates of the contour
+                        x, y, w, h = cv2.boundingRect(contour)
+                        # Convert the coordinates to YOLO format and write to file
+                        f.write('{:.6f} {:.6f} {:.6f} {:.6f}\n'.format((x + w / 2) / self.image.shape[1],
+                                                                         (y + h / 2) / self.image.shape[0],
+                                                                         w / self.image.shape[1],
+                                                                         h / self.image.shape[0]))
 
     def show_next_image(self):
         self.current_image_index += 1
