@@ -20,6 +20,7 @@ class Image_Displayer:
         self.root.title('Image')
 
         self.image = None
+        self.number_of_images = 0
 
         self.canvas = tkinter.Canvas(root, width=800, height=600, bg='white')
         self.canvas.pack()
@@ -36,6 +37,8 @@ class Image_Displayer:
     def load_image(self):
         self.file_paths = filedialog.askopenfilenames(title="Select Images",
                                                       filetypes=[("Image files", "*.png *.jpg *.jpeg")])
+
+        self.number_of_images = len(self.file_paths)
 
         if self.file_paths:
             self.current_image_index = 0
@@ -260,6 +263,7 @@ class Samnotator(Interface):
         self.masks = []
         self.masked_image = None
         self.contours = {}
+        self.annotated_images = []
 
         self.input_points = []
         self.input_labels = []
@@ -274,6 +278,9 @@ class Samnotator(Interface):
 
         self.annotation_path = annotation_path
 
+    def load_image(self):
+        super().load_image()
+        self.annotated_images = [None] * self.number_of_images
     def display_image(self, image):
         super().display_image(image)
         self.canvas.bind("<Button-1>", self.selector)
@@ -290,10 +297,14 @@ class Samnotator(Interface):
         self.colors = get_random_colors(len(self.classes))
 
     def draw_contours(self, mask):
-        image = np.copy(self.image)
+
+        if self.annotated_images[self.current_image_index] is not None:
+            image = np.copy(self.annotated_images[self.current_image_index])
+        else:
+            image = np.copy(self.image)
+
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cv2.drawContours(image, contours, -1, (0, 0, 255), thickness=2)
-        print(image is None)
         self.display_image(image)
 
     def selector(self, event):
@@ -355,8 +366,17 @@ class Samnotator(Interface):
             self.input_labels = []
             self.mask = None
             color = tuple(int(c) for c in self.colors[self.current_class])
-            cv2.drawContours(self.image, contours, -1, color=color, thickness=2)
-            self.display_image(self.image)
+
+            if self.annotated_images[self.current_image_index] is not None:
+                image = self.annotated_images[self.current_image_index]
+            else:
+                image = np.copy(self.image)
+
+            cv2.drawContours(image, contours, -1, color=color, thickness=2)
+
+            self.annotated_images[self.current_image_index] = image
+
+            self.display_image(image)
 
 
     def write_annotations(self):
@@ -373,5 +393,25 @@ class Samnotator(Interface):
                                                                      w / self.image.shape[1],
                                                                      h / self.image.shape[0]))
 
+    def show_next_image(self):
+        self.current_image_index += 1
+        self.check_image_index()
+
+        if self.current_image_index < len(self.file_paths):
+            self.resize_image()
+            if self.annotated_images[self.current_image_index] is not None:
+                self.display_image(self.annotated_images[self.current_image_index])
+            else:
+                self.display_image(self.image)
 
 
+    def show_prev_image(self):
+        self.current_image_index -= 1
+        self.check_image_index()
+
+        if self.current_image_index < len(self.file_paths):
+            self.resize_image()
+            if self.annotated_images[self.current_image_index] is not None:
+                self.display_image(self.annotated_images[self.current_image_index])
+            else:
+                self.display_image(self.image)
