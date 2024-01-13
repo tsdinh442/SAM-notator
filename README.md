@@ -3,4 +3,4 @@ An entry-level approach to build an annotator tool (YOLO format) that speeds up 
 
 ### Demo
 
-[![Video](https://img.youtube.com/vi/VijYGLsCihM/0.jpg)](https://www.youtube.com/watch?v=VijYGLsCihM)
+[![Video](https://img.youtube.com/vi/9W1M8kxq8ms/0.jpg)](https://www.youtube.com/watch?v=9W1M8kxq8ms)
