@@ -2,8 +2,7 @@
 An entry-level approach to build an annotator tool (YOLO format) that speeds up the process of selecting objects of interest using SAM
 The output will be txt files containing the bounding boxes of each object.
 
-<img src="media/segmentation.png" height="240">
-<img src="media/annotation.png" height="240">
+<img src="media/segmentation.png" height="240"><img src="media/annotation.png" height="240">
 
 ### A - Demo
 
