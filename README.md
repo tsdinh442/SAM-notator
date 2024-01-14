@@ -91,7 +91,12 @@ After the object is selected, from the dropdown, choose the according class and 
 
 **Watch the [Demo](https://www.youtube.com/watch?v=9W1M8kxq8ms) for more details.**
 
-###### Acknowlegedment
 
-    SAM-notator is based on Segment-Anything, https://github.com/facebookresearch/segment-anything, which is licensed under the Apache License, Version 2.0.
-    See the LICENSE file for the full license text.
+
+### License
+The model is licensed under the Apache 2.0 license.
+
+### Acknowlegedment
+
+SAM-notator is based on Segment-Anything, https://github.com/facebookresearch/segment-anything, which is licensed under the Apache License, Version 2.0.
+See the LICENSE file for the full license text.
