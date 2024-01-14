@@ -18,7 +18,7 @@ from pycocotools import mask as maskUtils
 
 
 def get_random_colors(number_of_colors):
-    random_colors = np.random.randint(0, 256, size=(number_of_colors, 3))
+    random_colors = np.random.randint(0, 255, size=(number_of_colors, 3))
     return random_colors
 
 class Image_Displayer:
