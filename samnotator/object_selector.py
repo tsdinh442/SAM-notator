@@ -16,6 +16,8 @@ from PIL import Image, ImageTk
 from sam import mask_generator, predictor
 from pycocotools import mask as maskUtils
 
+seed_value = 2
+np.random.seed(seed_value)
 
 def get_random_colors(number_of_colors):
     random_colors = np.random.randint(0, 255, size=(number_of_colors, 3))

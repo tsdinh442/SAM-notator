@@ -8,13 +8,18 @@ See the LICENSE file for the full license text.
 from segment_anything import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
 import torch
 
-
+# for MacOS
 device = 'mps' if torch.backends.mps.is_available() else 'cpu'
+
+# for windows
+# device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 print(device)
 
 check_point = 'models/sam_vit_h_4b8939.pth'
+model_type = 'vit_h'
 
-sam = sam_model_registry["vit_h"](checkpoint=check_point)
+sam = sam_model_registry[model_type](checkpoint=check_point)
 sam.to(device=device)
 
 mask_generator = SamAutomaticMaskGenerator(
