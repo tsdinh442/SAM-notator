@@ -1,8 +1,8 @@
 # SAM-notator
-An entry-level approach to build an annotator tool (YOLO format) that speeds up the process of selecting objects of interest using SAM
-The output will be txt files containing the bounding boxes of each object.
+An annotator tool that speeds up the process of selecting objects of interest using [**SAM**](https://github.com/facebookresearch/segment-anything) or [**Segment-Anything**](https://github.com/facebookresearch/segment-anything).
+The output will be txt files containing the **_bounding boxes_** information of each object in `YOLO` format.
 
-<img src="media/segmentation.png" height="240"><img src="media/annotation.png" height="240">
+<img src="media/segmentation.png" height="240"> <img src="media/annotation.png" height="240">
 
 ### A - Demo
 
@@ -26,8 +26,8 @@ or
 
     conda install opencv-python pycocotools matplotlib onnxruntime onnx
 
-##### 4. Install Pytorch
-Follow the instructions on this [link](https://pytorch.org)  to install Pytorch 
+##### 4. Install Pytorch and TorchVision
+Follow the instructions on this [link](https://pytorch.org)  to install Pytorch and TorchVision dependencies.
 
 ##### 5. Install segment-anything
 Follow the instructions in the [Segment-Anything](https://github.com/facebookresearch/segment-anything) GitHub repository
@@ -71,8 +71,25 @@ If _not_ using the `default` or `vit-h` model check point, in `sam.py`, replace 
 
     python samnotator/main.py
 
-### Acknowlegedment
-`
-SAM-notator is based on Segment-Anything, https://github.com/facebookresearch/segment-anything, which is licensed under the Apache License, Version 2.0.
-See the LICENSE file for the full license text.
-`
+### D - How to use
+
+##### 1. Select an object
+To *select* an object, `left click` the object. Continue to left click other parts of the object until the whole object is selected.
+
+<img src="media/instruction1.png" height="240"> <img src="media/instruction2.png" height="240">
+
+##### 2. Deselect part of an object
+To *deselect* part of an object `right click` on the part to be removed. 
+
+<img src="media/instruction3.png" height="240"> <img src="media/instruction4.png" height="240">
+
+
+#### 3. Add a bounding box
+After the object is selected, from the dropdown, choose the according class and click `Add`. 
+
+**Watch the [Demo](https://www.youtube.com/watch?v=9W1M8kxq8ms) for more details.**
+
+###### Acknowlegedment
+
+    SAM-notator is based on Segment-Anything, https://github.com/facebookresearch/segment-anything, which is licensed under the Apache License, Version 2.0.
+    See the LICENSE file for the full license text.
