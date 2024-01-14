@@ -6,6 +6,8 @@ The output will be txt files containing the **_bounding boxes_** information of 
 
 ### A - Demo
 
+Watch the Demo [here](https://www.youtube.com/watch?v=9W1M8kxq8ms).
+
 [![Video](https://img.youtube.com/vi/9W1M8kxq8ms/0.jpg)](https://www.youtube.com/watch?v=9W1M8kxq8ms)
 
 ### B - Installation
